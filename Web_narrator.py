@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-import subprocess
+import pyttsx3
+import time
 
 def get_web_text(url):
     response = requests.get(url)
@@ -12,16 +13,29 @@ def get_web_text(url):
     text = soup.get_text(separator=" ", strip=True)
     return text
 
-def narrate_with_espeak(text, speed=175, voice="en"):
-    chunk_size = 500
+def narrate_with_pyttsx3(text, speed=175, voice_id=None, chunk_size=500, pause=0.1):
+    engine = pyttsx3.init()
+    engine.setProperty("rate", speed)
+
+    if voice_id:
+        try:
+            engine.setProperty("voice", voice_id)
+        except Exception as e:
+            print(f"[WARN] Could not set voice: {e}")
+            
     for i in range(0, len(text), chunk_size):
         chunk = text[i:i+chunk_size]
-        subprocess.run(["espeak", f"-s{speed}", f"-v{voice}", chunk])
-
+        engine.say(chunk)
+        engine.runAndWait()
+        time.sleep(pause)
 if __name__ == "__main__":
     url = input("Enter a webpage URL: ").strip()
     print("🔍 Fetching content...")
-    text = get_web_text(url)
-    print("🎙️ Speaking aloud using eSpeak...")
-    narrate_with_espeak(text[:3000]) 
+    try:
+        text = get_web_text(url)
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch webpage: {e}")
+        exit(1)
+    print("🎙️ Speaking aloud using pyttsx3...")
+    narrate_with_pyttsx3(text[:3000])  
     print("✅ Done!")
